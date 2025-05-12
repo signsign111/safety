@@ -5,7 +5,7 @@
   <title>MSDS 이미지 뷰어</title>
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <style>
-    video, img {
+    video, canvas, img {
       width: 300px;
       margin: 10px 0;
     }
@@ -13,34 +13,38 @@
 </head>
 <body>
   <h1>MSDS 자동 인식 시스템</h1>
-  <video id="webcam" autoplay playsinline></video>
+  <div id="webcam"></div>
   <div id="result">예측 결과가 여기에 표시됩니다.</div>
   <img id="msds-image" src="" alt="MSDS 이미지가 표시됩니다.">
 
   <script>
-    const URL = "https://teachablemachine.withgoogle.com/models/ohpUhTOtu/model.json"; // ← model.json 링크 전체 붙여줘야 해
+    const URL = "https://teachablemachine.withgoogle.com/models/ohpUhTOtu/model.json";
 
-    let model, webcam;
+    let model, webcam, maxPredictions;
     let lastPrediction = "";
 
     async function init() {
-      const modelURL = URL;
-      const metadataURL = URL.replace("model.json", "metadata.json");
+      const modelURL = URL + "model.json";
+      const metadataURL = URL + "metadata.json";
 
-      // 모델 불러오기
+      // 모델과 메타데이터 로드
       model = await tmImage.load(modelURL, metadataURL);
+      maxPredictions = model.getTotalClasses();
 
-      // 웹캠 설정
-      webcam = new tmImage.Webcam(300, 300, true);
-      await webcam.setup();
+      // 웹캠 설정 및 시작
+      const flip = true; // 셀카 모드
+      webcam = new tmImage.Webcam(300, 300, flip);
+      await webcam.setup(); // 웹캠 접근 요청
       await webcam.play();
-      document.getElementById("webcam").appendChild(webcam.canvas);
       window.requestAnimationFrame(loop);
+
+      // 웹캠 캔버스를 div 요소 안에 추가
+      document.getElementById("webcam").appendChild(webcam.canvas);
     }
 
     async function loop() {
-      webcam.update();
-      await predict();
+      webcam.update(); // 웹캠 캔버스 업데이트
+      await predict(); // 예측 실행
       window.requestAnimationFrame(loop);
     }
 
@@ -60,8 +64,8 @@
     }
 
     function showMSDSImage(label) {
-      const filename = encodeURIComponent(label) + ".jpeg"; // 예: "염화 칼슘.jpeg"
-      const imagePath =  filename; // images 폴더 안에 JPEG 저장해 두기
+      const filename = encodeURIComponent(label) + ".jpeg"; // 이미지 이름 예: "염화 칼슘.jpeg"
+      const imagePath = filename; // 이미지가 같은 폴더에 있다고 가정
       document.getElementById("msds-image").src = imagePath;
     }
 
