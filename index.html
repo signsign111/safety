@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MSDS TTS Viewer</title>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+  <style>
+    #msds-image {
+      max-width: 300px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MSDS 인식 및 음성 안내</h1>
+  <video id="webcam" autoplay playsinline width="300" height="300"></video>
+  <div id="label">모델을 불러오는 중...</div>
+  <img id="msds-image" src="" alt="MSDS 이미지가 여기에 표시됩니다.">
+
+  <script type="text/javascript">
+    const URL = "여기에_티처블머신_링크/model.json"; // Teachable Machine 모델 주소로 바꾸기
+
+    let model, webcam;
+
+    // 이미지 파일과 설명 텍스트를 함께 저장
+    const msdsData = {
+      "H2SO4": {
+        img: "images/h2so4.png",
+        desc: "황산은 강산이며, 피부에 닿으면 심각한 화상을 입힐 수 있습니다."
+      },
+      "NaCl": {
+        img: "images/nacl.png",
+        desc: "소금은 일반적으로 안전하지만 과도한 섭취는 건강에 해로울 수 있습니다."
+      },
+      "HCl": {
+        img: "images/hcl.png",
+        desc: "염산은 휘발성이 강하며, 흡입하거나 접촉 시 위험합니다."
+      }
+      // 필요에 따라 추가 가능
+    };
+
+    async function init() {
+      const modelURL = URL;
+      const metadataURL = URL.replace("model.json", "metadata.json");
+
+      model = await tmImage.load(modelURL, metadataURL);
+      webcam = new tmImage.Webcam(300, 300, true);
+      await webcam.setup();
+      await webcam.play();
+      window.requestAnimationFrame(loop);
+
+      document.getElementById("webcam").appendChild(webcam.canvas);
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      prediction.sort((a, b) => b.probability - a.probability);
+
+      const label = prediction[0].className;
+      const confidence = prediction[0].probability;
+
+      document.getElementById("label").innerText = `${label} (${(confidence * 100).toFixed(2)}%)`;
+
+      if (confidence > 0.9) {
+        showMSDS(label);
+      }
+    }
+
+    let lastSpoken = "";
+    function showMSDS(label) {
+      if (lastSpoken === label) return;
+
+      const data = msdsData[label];
+      if (data) {
+        // 이미지 업데이트
+        document.getElementById("msds-image").src = data.img;
+
+        // TTS 실행
+        const utter = new SpeechSynthesisUtterance(data.desc);
+        utter.lang = "ko-KR"; // 한국어 설정
+        speechSynthesis.speak(utter);
+
+        lastSpoken = label;
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
