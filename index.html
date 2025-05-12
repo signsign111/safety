@@ -61,7 +61,7 @@
 
     function showMSDSImage(label) {
       const filename = encodeURIComponent(label) + ".jpeg"; // 예: "염화 칼슘.jpeg"
-      const imagePath = "images/" + filename; // images 폴더 안에 JPEG 저장해 두기
+      const imagePath =  filename; // images 폴더 안에 JPEG 저장해 두기
       document.getElementById("msds-image").src = imagePath;
     }
 
